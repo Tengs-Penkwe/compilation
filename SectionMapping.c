@@ -1,7 +1,7 @@
 #include <unistd.h>
 
 int
-main()
+_start()
 {
 	while(1)
 	{
