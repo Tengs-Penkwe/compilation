@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <dlfcn.h>
 
 #define SETUP_STACK			\
@@ -17,7 +18,7 @@ while(++i < argc -1 ){			\
 		esp+=8;				\
 		break;				\
 	case 's':				\
-		asm volatile ("push %0" :;	\
+		asm volatile ("push %0" ::	\
 			"r"(&argv[i][1]) );	\
 		esp+=8;				\
 		break;				\
@@ -28,30 +29,68 @@ while(++i < argc -1 ){			\
 }
 
 #define RESTORE_STACK				\
-	asm volatile ("add %0,%%esp::"r"(esp))
-
+	asm volatile ("add %0,%%esp"::"r"(esp))
 
 int main (int argc, char** argv)
 {
 	void* handle;
-	double (*func) (double);
 	char* error;
+	int esp = 0;
+	void* func;
+	int i;
 
 	handle = dlopen(argv[1],RTLD_NOW);
 	if(handle == NULL)
 	{
-		printf("Open Library %s error: %s \n", argv[1], dlerror() );
+		printf("Can't find Library %s \n", argv[1]);
 		return -1;
 	}
 
-	func = dlsym(handle, "sin");
+	func = dlsym(handle, argv[2]);
 	if( (error = dlerror()) != NULL )
 	{
-		printf("Symbol sin not found: %s \n", error);
+		printf("Symbol not found: %s error: %s \n",argv[2], error);
 		goto exit_runso;
 	}
-
-	printf( "%f\n", func(3.1415926 / 2) );
+	
+	switch (argv[argc-1][0]){
+	case 'i':
+	{
+		int (*func_int)() = func;
+		SETUP_STACK;
+		int ret = func_int();
+		RESTORE_STACK;
+		printf("ret = %d\n",ret);
+		break;
+	}
+	case 'd':
+	{
+		double (*func_double)() = func;
+		SETUP_STACK;
+		double ret = func_double();
+		RESTORE_STACK;
+		printf("ret = %lf\n",ret);
+		break;
+	}
+	case 's':
+	{
+		char* (*func_str)() = func;
+		SETUP_STACK;
+		char* ret = func_str();
+		RESTORE_STACK;
+		printf("ret = %s\n",ret);
+		break;
+	}
+	case 'v':
+	{
+		void (*func_void)() = func;
+		SETUP_STACK;
+		func_void();
+		RESTORE_STACK;
+		printf("ret = void");
+		break;
+	}
+	}
 
 exit_runso:
 
