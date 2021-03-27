@@ -13,7 +13,7 @@ while(++i < argc -1 ){			\
 		break;				\
 	case 'd':				\
 		atof(&argv[1][1]);		\
-		asm volatile ("subl $8, %%esp;"	\
+		asm volatile ("subl $8, %esp;"	\
 			"fstpl (%esp)");	\
 		esp+=8;				\
 		break;				\
